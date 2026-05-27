@@ -1,53 +1,69 @@
-# Audi A6 C6 2.7 TDI · Sound Control toolkit
-**EDC17CP14 — sin reflash de ECU**
+# VTG Bypass Toolkit · Audi A6 C6 2.7 TDI (EDC17CP14)
 
-Toolkit para conseguir un sonido grave a bajas RPM en el Audi 2.7 TDI **sin
-tocar el software de la ECU**, controlando una válvula de bypass de escape (o
-un soundbooster activo) desde una Raspberry Pi con telemetría OBD y UI móvil.
+Un relé corta el +12 V del actuador VTG antes de arrancar → el coche arranca
+con los álabes en posición failsafe → sonido. Botón en el móvil "ACTIVAR
+TURBO" → la Raspberry devuelve corriente al actuador y borra los DTCs VTG
+automáticamente por ELM327 Bluetooth.
 
-> No se modifican mapas. No se intercepta el actuador VTG. Cero riesgo de
-> P2563/limp por la modificación. La válvula va aguas abajo del DPF, fuera de
-> cualquier lazo de control de la ECU.
+> **Sin reflash de ECU. Sin tocar mapas.** Un relé, una Pi, un ELM327 BT.
 
-## Qué hace
+## Funcionamiento
 
-1. La Pi lee por OBD-II (ELM327): RPM, MAF, MAP/boost, ECT, pedal, velocidad, DTCs.
-2. Decide cuándo abrir la válvula de escape (relé 1) — modo AUTO con histeresis:
-   - **Abre** en 600–1400 rpm con pedal ≤ 20 % y boost ≤ 0.2 bar (idle, marcha lenta, frío).
-   - **Cierra** automáticamente en autopista o bajo carga.
-   - Modos manuales: AUTO / OPEN / CLOSED / COLD_ONLY.
-3. Sirve dashboard móvil (Flask + WebSocket) con telemetría, control y borrado de DTC.
-4. Borrado **selectivo** de DTCs con whitelist + pre-condiciones (no enmascarar fallos reales).
+```
+   Móvil ◄──WiFi/hotspot──► Raspberry Pi Zero 2 W
+                              │            │
+                              │            └── BT ──► ELM327 ──► OBD-II
+                              │                                  (lectura
+                              │                                   + clear DTC)
+                              │
+                              └── GPIO 5 ──► Módulo relé 1ch 5V
+                                                │
+                                                ├── COM ◄── +12V mazo coche
+                                                └── NO  ──► +12V actuador VTG
+```
+
+## Antes de comprar nada
+
+⚠️ Lee `docs/01_concepto_vtg_bypass.md` sección **1.2** — hay un test de
+30 segundos que te dice si tu actuador concreto falla en abierto (mod
+funciona) o en cerrado (mod no aplica).
 
 ## Estructura
 
 ```
 docs/
-  01_concepto_sonido_externo.md   # Por qué este enfoque y cómo funciona
-  02_hardware.md                   # Lista de compra y cableado
-  03_seguridad_dtc.md              # Estrategia de borrado seguro
-  04_instalacion.md                # Pasos en la Raspberry
+  01_concepto_vtg_bypass.md   # Cómo funciona, qué cable cortar, riesgos
+  02_hardware.md              # Lista de compra exacta (~100 €)
+  03_uso.md                   # Flujo diario, qué hacer si X
+  04_instalacion.md           # Pi OS, pairing BT, systemd
 app/
-  obd_manager.py                   # ELM327: PIDs, DTCs, borrado con guards
-  sound_controller.py              # Lógica AUTO/manual de apertura válvula
-  relay_controller.py              # GPIO de los relés
-  web_server.py                    # Flask + SocketIO
-  config.yaml                      # Toda la configuración
-  templates/index.html             # UI móvil
+  obd_manager.py              # ELM327: lectura + clear DTCs
+  turbo_relay.py              # Lógica bypass/engage + secuencia de clear
+  relay_controller.py         # GPIO
+  web_server.py               # Flask + SocketIO
+  templates/index.html        # UI móvil: 2 botones grandes + DTCs + tele
   static/{app.css, app.js}
+  config.yaml
 systemd/edc17-vtg.service
-scripts/install.sh
+scripts/
+  install.sh
+  test_relay.py               # Test del relé en banco
 ```
 
-## Empieza por aquí
+## Lista de compra resumida (~100 €)
 
-1. Lee `docs/01_concepto_sonido_externo.md` (qué se puede y qué no).
-2. `docs/02_hardware.md` para la lista de compra (~75 € Pi + OBD + relés, +120–150 € la válvula instalada).
-3. `docs/04_instalacion.md` para flashear Pi OS y dejar el servicio corriendo.
+1. Raspberry Pi Zero 2 W — 22 €
+2. microSD Industrial 16 GB — 10 €
+3. vGate iCar Pro BLE 4.0 (ELM327 Bluetooth) — 25 €
+4. Buck DC-DC 12→5V automotive — 12 €
+5. Módulo relé 1 ch 5V opto — 5 €
+6. Pigtail conector VTG + cables + fusible + caja — 25 €
 
-## Coste y tiempo
+Detalle en `docs/02_hardware.md`.
 
-- Componentes electrónicos: **~75 €**
-- Válvula de escape + soldadura en taller: **~120–170 €**
-- Tiempo Pi (config + cableado): 2–3 h
-- Tiempo taller (válvula): 1–2 h
+## Uso en 4 pasos
+
+1. Subes al coche. Pi arranca con contacto.
+2. App en móvil → `CORTAR (sonido)` → arrancas → suena grave.
+3. Cuando quieras conducir normal → `ACTIVAR TURBO` → ya.
+4. Antes de ITV: desconecta el pigtail, deja el cable original como estaba.

@@ -17,13 +17,10 @@
     $("rpm").textContent = fmt(s.rpm, 0);
     $("speed").textContent = fmt(s.speed_kmh, 0);
     $("boost").textContent = fmt(s.boost_bar, 2);
-    $("maf").textContent = fmt(s.maf_gs, 1);
     $("ect").textContent = fmt(s.coolant_c, 0);
-    $("iat").textContent = fmt(s.intake_c, 0);
+    $("maf").textContent = fmt(s.maf_gs, 1);
     $("pedal").textContent = fmt(s.pedal_pct, 0);
-    $("thr").textContent = fmt(s.throttle_pct, 0);
 
-    // DTCs
     const ul = $("dtcs");
     ul.innerHTML = "";
     if (!s.dtcs || s.dtcs.length === 0) {
@@ -36,84 +33,52 @@
       }
     }
 
-    // Auto-clear toggle (no pisar al usuario)
-    const auto = $("auto-clear");
-    if (document.activeElement !== auto) auto.checked = !!s.auto_clear;
-
-    // Modo sonido
-    if (s.sound) {
-      for (const btn of document.querySelectorAll(".mode")) {
-        btn.classList.toggle("active", btn.dataset.mode === s.sound.mode);
-      }
-      const badge = $("sound-open");
-      badge.textContent = s.sound.open ? "ABIERTA" : "CERRADA";
-      badge.classList.toggle("on", !!s.sound.open);
-      $("sound-reason").textContent = s.sound.reason || "—";
-    }
-
-    // Relés
-    if (s.relays) {
-      for (const r of s.relays) {
-        const btn = document.querySelector(`.relay[data-id="${r.id}"]`);
-        if (!btn) continue;
-        btn.classList.toggle("on", !!r.state);
-        btn.querySelector(".rstate").textContent = r.state ? "ON" : "OFF";
-      }
+    if (s.turbo) {
+      const el = $("vtg-state");
+      el.textContent = s.turbo.state.toUpperCase();
+      el.classList.toggle("engaged", s.turbo.state === "engaged");
+      el.classList.toggle("bypass", s.turbo.state === "bypass");
+      $("last-action").textContent = s.turbo.last_action || "—";
+      const busy = !!s.turbo.busy;
+      $("btn-bypass").disabled = busy || s.turbo.state === "bypass";
+      $("btn-engage").disabled = busy || s.turbo.state === "engaged";
     }
   });
 
-  // Borrar manual
-  $("btn-clear").addEventListener("click", async () => {
-    const btn = $("btn-clear");
+  async function callTurbo(action, btn, label) {
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = "Procesando…";
+    try {
+      const r = await fetch(`/api/turbo/${action}`, { method: "POST" }).then(r => r.json());
+      if (!r.ok) {
+        btn.textContent = `Bloqueado: ${r.reason}`;
+        setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+      } else {
+        btn.textContent = orig;
+      }
+    } catch (e) {
+      btn.textContent = "Error red";
+      setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+    }
+  }
+
+  $("btn-bypass").addEventListener("click", (e) => callTurbo("bypass", e.currentTarget));
+  $("btn-engage").addEventListener("click", (e) => callTurbo("engage", e.currentTarget));
+
+  $("btn-clear").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
     btn.disabled = true;
     btn.textContent = "Borrando…";
     try {
       const r = await fetch("/api/clear", { method: "POST" }).then(r => r.json());
-      if (r.ok) {
-        btn.textContent = r.cleared && r.cleared.length
-          ? `Borrados: ${r.cleared.join(", ")}`
-          : "Nada que borrar";
-      } else {
-        btn.textContent = `Bloqueado: ${r.reason}`;
-      }
-    } catch (e) {
-      btn.textContent = "Error de red";
+      btn.textContent = r.ok ? "Borrados" : `Bloqueado: ${r.reason}`;
+    } catch {
+      btn.textContent = "Error red";
     }
     setTimeout(() => {
       btn.disabled = false;
-      btn.textContent = "Borrar fallos ahora";
+      btn.textContent = "Borrar todos los fallos";
     }, 2000);
   });
-
-  $("auto-clear").addEventListener("change", async (e) => {
-    await fetch("/api/auto_clear", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ enabled: e.target.checked }),
-    });
-  });
-
-  // Modo sonido
-  for (const btn of document.querySelectorAll(".mode")) {
-    btn.addEventListener("click", async () => {
-      const mode = btn.dataset.mode;
-      await fetch("/api/sound/mode", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode }),
-      });
-    });
-  }
-
-  // Relés
-  for (const btn of document.querySelectorAll(".relay")) {
-    btn.addEventListener("click", async () => {
-      const id = Number(btn.dataset.id);
-      await fetch(`/api/relay/${id}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: "{}",
-      });
-    });
-  }
 })();

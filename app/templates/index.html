@@ -4,29 +4,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0d10">
-  <title>Audi 2.7 TDI · Sound Control</title>
+  <title>VTG Bypass · Audi 2.7 TDI</title>
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
   <header>
-    <h1>Sound Control · 2.7 TDI</h1>
+    <h1>VTG Bypass · 2.7 TDI</h1>
     <span id="conn" class="pill off">desconectado</span>
   </header>
 
   <main>
-    <section class="card">
-      <h2>Modo sonido</h2>
-      <div class="modes">
-        {% for m in modes %}
-        <button class="mode" data-mode="{{ m }}">{{ m }}</button>
-        {% endfor %}
+    <section class="card big-state">
+      <div class="state-line">
+        <span class="label">Estado VTG</span>
+        <span id="vtg-state" class="state engaged">ENGAGED</span>
       </div>
-      <div class="row sound-row">
-        <div class="sound-state">
-          Válvula: <span id="sound-open" class="badge">—</span>
-        </div>
-        <div class="sound-reason" id="sound-reason">—</div>
+      <div class="last-action" id="last-action">—</div>
+      <div class="row buttons">
+        <button id="btn-bypass" class="big red">CORTAR (sonido)</button>
+        <button id="btn-engage" class="big green">ACTIVAR TURBO</button>
       </div>
+      <p class="hint">"CORTAR" solo funciona con motor parado o idle muy estable.
+      "ACTIVAR" devuelve corriente al actuador y borra los DTCs VTG automáticamente.</p>
     </section>
 
     <section class="card">
@@ -35,11 +34,9 @@
         <div class="metric"><span class="label">RPM</span><span class="value" id="rpm">—</span></div>
         <div class="metric"><span class="label">Velocidad</span><span class="value" id="speed">—</span><span class="unit">km/h</span></div>
         <div class="metric"><span class="label">Boost</span><span class="value" id="boost">—</span><span class="unit">bar</span></div>
-        <div class="metric"><span class="label">MAF</span><span class="value" id="maf">—</span><span class="unit">g/s</span></div>
         <div class="metric"><span class="label">ECT</span><span class="value" id="ect">—</span><span class="unit">°C</span></div>
-        <div class="metric"><span class="label">IAT</span><span class="value" id="iat">—</span><span class="unit">°C</span></div>
+        <div class="metric"><span class="label">MAF</span><span class="value" id="maf">—</span><span class="unit">g/s</span></div>
         <div class="metric"><span class="label">Pedal</span><span class="value" id="pedal">—</span><span class="unit">%</span></div>
-        <div class="metric"><span class="label">Throttle</span><span class="value" id="thr">—</span><span class="unit">%</span></div>
       </div>
     </section>
 
@@ -47,31 +44,8 @@
       <h2>Fallos (DTCs)</h2>
       <ul id="dtcs" class="dtcs"><li class="empty">sin fallos</li></ul>
       <div class="row">
-        <button id="btn-clear" class="big danger">Borrar fallos ahora</button>
+        <button id="btn-clear" class="big">Borrar todos los fallos</button>
       </div>
-      <label class="toggle">
-        <input type="checkbox" id="auto-clear">
-        <span>Auto-borrar cada 10 s (solo whitelist + idle estable)</span>
-      </label>
-    </section>
-
-    <section class="card">
-      <h2>Relés (manual)</h2>
-      <div id="relays" class="relays">
-        {% for r in relays %}
-        <button class="relay" data-id="{{ r.id }}">
-          <span class="rname">{{ r.name }}</span>
-          <span class="rstate">OFF</span>
-        </button>
-        {% endfor %}
-      </div>
-      <p class="hint-inline">En modo AUTO el relé "Válvula sound" lo controla el sistema; pulsarlo manualmente lo fuerza solo hasta el siguiente tick.</p>
-    </section>
-
-    <section class="card hint">
-      <p><b>Sin reflash de ECU.</b> La válvula está después del DPF, fuera del lazo de control de la ECU.
-      AUTO abre solo en 600–1400 rpm con pedal ≤ 20%, baja velocidad, o motor frío.
-      Cierra automáticamente en autopista y bajo carga.</p>
     </section>
   </main>
 

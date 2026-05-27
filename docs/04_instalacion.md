@@ -27,25 +27,53 @@ journalctl -u edc17-vtg -f
 
 Abre desde el móvil: **http://vtgpi.local:5000**
 
-## ELM327
+## ELM327 Bluetooth (vGate iCar Pro BLE) — ruta recomendada
 
-### USB (recomendado)
-Aparece como `/dev/ttyUSB0`. Comprueba:
-```bash
-dmesg | tail
-ls /dev/ttyUSB*
-```
+> El config.yaml por defecto espera `/dev/rfcomm0`. Para BT clásico (SPP).
+> Si tu vGate es BLE puro, mejor usar un wrapper como `obdgateway` o seguir
+> con SPP que también soporta. La iCar Pro BLE 4.0 expone perfil SPP.
 
-### Bluetooth
+1. Enchufa el ELM327 en el OBD-II del coche y da contacto.
+2. En la Pi:
 ```bash
 sudo bluetoothctl
-> scan on
+> power on
+> agent on
+> scan on             # apunta la MAC del OBDII
 > pair  XX:XX:XX:XX:XX:XX
 > trust XX:XX:XX:XX:XX:XX
 > exit
 sudo rfcomm bind 0 XX:XX:XX:XX:XX:XX 1
+ls -l /dev/rfcomm0
 ```
-Edita `app/config.yaml` → `port: /dev/rfcomm0`.
+
+Si pide PIN, prueba `1234` o `0000`.
+
+Para que `rfcomm bind` sea persistente al boot, crea
+`/etc/systemd/system/elm-rfcomm.service`:
+
+```ini
+[Unit]
+Description=Bind ELM327 to /dev/rfcomm0
+After=bluetooth.target
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rfcomm bind 0 XX:XX:XX:XX:XX:XX 1
+RemainAfterExit=true
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now elm-rfcomm
+```
+
+## ELM327 USB (alternativa)
+Aparece como `/dev/ttyUSB0`. Edita `app/config.yaml` → `port: /dev/ttyUSB0`.
+```bash
+dmesg | tail
+ls /dev/ttyUSB*
+```
 
 Para que `rfcomm bind` sea persistente, añade a `/etc/rc.local` antes del `exit 0`:
 ```

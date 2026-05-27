@@ -1,21 +1,24 @@
 obd:
-  port: /dev/ttyUSB0          # ELM327 USB. Para BT: /dev/rfcomm0
+  port: /dev/rfcomm0          # ELM327 Bluetooth (ver docs/04 para pairing).
+                              # Si usas USB cámbialo a /dev/ttyUSB0
   baudrate: 38400
   timeout: 2.0
   fast: false
-  protocol: auto
+  protocol: auto              # ISO 15765-4 CAN (Audi 2009)
 
 dtc:
-  auto_clear_enabled: false   # arranca en OFF; el usuario lo activa desde la web
+  # Lectura siempre activa; auto-clear OFF por defecto (el flujo normal es:
+  # tras pulsar "ENGAGE" se hace una ráfaga de clears para los códigos VTG).
+  auto_clear_enabled: false
   auto_clear_interval_s: 10
-  clearable_codes:            # whitelist; nada fuera de aquí se borra automáticamente
+  clearable_codes:
     - P2563
     - P0046
     - P132B
-  blacklist_codes:            # nunca, ni manual
+    - P003A
+  blacklist_codes:
     - P0234
     - P0299
-    - P003A
     - P0606
     - P062F
   precondition:
@@ -25,25 +28,22 @@ dtc:
     stable_window_s: 5
 
 relays:
-  # BCM numbering, active_low: módulo relé típico (LOW = activo)
-  - {id: 1, gpio: 5,  name: "Válvula sound", active_low: true, default: false}
-  - {id: 2, gpio: 6,  name: "Amp soundbooster", active_low: true, default: false}
-  - {id: 3, gpio: 13, name: "LED modo",      active_low: true, default: false}
-  - {id: 4, gpio: 19, name: "Auxiliar",      active_low: true, default: false}
+  # Único relé necesario: corta el +12V del actuador VTG Hella.
+  # active_low: módulos de relé chinos típicos. El relé está ON cuando el
+  # GPIO está en LOW. ON = VTG con corriente (control normal).
+  - {id: 1, gpio: 5, name: "VTG +12V", active_low: true, default: true}
 
-sound:
-  relay_id: 1                 # qué relé es la válvula de escape
-  mode: auto                  # auto | open | closed | cold_only
-  rpm_min: 600
-  rpm_max: 1400
-  pedal_max_pct: 20
-  boost_max_bar: 0.20
-  speed_max_kmh: 30
-  cold_below_c: 50
-  warm_above_c: 60
-  hold_open_ms: 300
-  hold_close_ms: 500
-  tick_ms: 200
+turbo:
+  relay_id: 1
+  default_state: engaged       # arranca con relé ON (=VTG con corriente)
+  engage_settle_s: 3.0         # espera tras dar corriente al actuador
+  clear_attempts: 6            # intentos de borrado de DTCs VTG
+  clear_interval_s: 1.5
+  vtg_codes:
+    - P2563
+    - P0046
+    - P132B
+    - P003A
 
 web:
   host: 0.0.0.0

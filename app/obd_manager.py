@@ -75,6 +75,24 @@ class OBDManager:
         """Triggered by the user. Same safety pipeline as automatic, but logs trigger=manual."""
         return self._maybe_clear(trigger="manual", user=user, force_no_rate_limit=True)
 
+    def read_dtcs_now(self) -> list[tuple[str, str]]:
+        """Lectura on-demand de DTCs (bypassa el snapshot cacheado)."""
+        return self._read_dtcs()
+
+    def force_clear(self, codes_context: list[str] | None = None) -> bool:
+        """Mode 04 sin pre-condiciones — usado por la secuencia de engage del turbo.
+        El llamador asume la responsabilidad del contexto."""
+        if not self._conn or not self._conn.is_connected():
+            return False
+        try:
+            self._conn.query(obd.commands.CLEAR_DTC, force=True)
+            self._last_clear_ts = time.time()
+            self._append_log(f"CLEAR codes={codes_context or 'all'} trigger=turbo_engage")
+            return True
+        except Exception:
+            log.exception("force_clear failed")
+            return False
+
     # ---------- internals ----------
 
     def _connect(self) -> bool:
