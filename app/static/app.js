@@ -6,13 +6,11 @@
 
   socket.on("connect", () => {
     $("conn").textContent = "conectado";
-    $("conn").classList.remove("off");
-    $("conn").classList.add("on");
+    $("conn").classList.remove("off"); $("conn").classList.add("on");
   });
   socket.on("disconnect", () => {
     $("conn").textContent = "desconectado";
-    $("conn").classList.add("off");
-    $("conn").classList.remove("on");
+    $("conn").classList.add("off"); $("conn").classList.remove("on");
   });
 
   socket.on("status", (s) => {
@@ -25,6 +23,7 @@
     $("pedal").textContent = fmt(s.pedal_pct, 0);
     $("thr").textContent = fmt(s.throttle_pct, 0);
 
+    // DTCs
     const ul = $("dtcs");
     ul.innerHTML = "";
     if (!s.dtcs || s.dtcs.length === 0) {
@@ -37,9 +36,22 @@
       }
     }
 
+    // Auto-clear toggle (no pisar al usuario)
     const auto = $("auto-clear");
     if (document.activeElement !== auto) auto.checked = !!s.auto_clear;
 
+    // Modo sonido
+    if (s.sound) {
+      for (const btn of document.querySelectorAll(".mode")) {
+        btn.classList.toggle("active", btn.dataset.mode === s.sound.mode);
+      }
+      const badge = $("sound-open");
+      badge.textContent = s.sound.open ? "ABIERTA" : "CERRADA";
+      badge.classList.toggle("on", !!s.sound.open);
+      $("sound-reason").textContent = s.sound.reason || "—";
+    }
+
+    // Relés
     if (s.relays) {
       for (const r of s.relays) {
         const btn = document.querySelector(`.relay[data-id="${r.id}"]`);
@@ -50,6 +62,7 @@
     }
   });
 
+  // Borrar manual
   $("btn-clear").addEventListener("click", async () => {
     const btn = $("btn-clear");
     btn.disabled = true;
@@ -80,6 +93,19 @@
     });
   });
 
+  // Modo sonido
+  for (const btn of document.querySelectorAll(".mode")) {
+    btn.addEventListener("click", async () => {
+      const mode = btn.dataset.mode;
+      await fetch("/api/sound/mode", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+    });
+  }
+
+  // Relés
   for (const btn of document.querySelectorAll(".relay")) {
     btn.addEventListener("click", async () => {
       const id = Number(btn.dataset.id);

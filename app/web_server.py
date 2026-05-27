@@ -14,6 +14,7 @@ from flask_socketio import SocketIO
 
 from obd_manager import OBDManager
 from relay_controller import RelayController
+from sound_controller import Mode, SoundCfg, SoundController
 
 ROOT = Path(__file__).parent
 log = logging.getLogger(__name__)
@@ -41,18 +42,19 @@ def create_app():
 
     obd_mgr = OBDManager(cfg, clear_log_path=log_dir / "clear.log")
     relays = RelayController(cfg["relays"])
+    sound_cfg = SoundCfg(**cfg["sound"])
+    sound = SoundController(sound_cfg, obd_mgr, relays)
+    try:
+        sound.set_mode(cfg["sound"].get("mode", "auto"))
+    except ValueError:
+        pass
+
     obd_mgr.start()
+    sound.start()
 
-    # ---------------- HTTP ----------------
-
-    @app.route("/")
-    def index():
-        return render_template("index.html", relays=relays.snapshot())
-
-    @app.route("/api/status")
-    def api_status():
+    def status_payload() -> dict:
         s = obd_mgr.get_snapshot()
-        return jsonify({
+        return {
             "connected": s.connected,
             "ts": s.ts,
             "rpm": s.rpm, "speed_kmh": s.speed_kmh,
@@ -63,7 +65,22 @@ def create_app():
             "dtcs": s.dtcs,
             "auto_clear": obd_mgr.auto_clear,
             "relays": relays.snapshot(),
-        })
+            "sound": sound.snapshot(),
+        }
+
+    # ---------------- HTTP ----------------
+
+    @app.route("/")
+    def index():
+        return render_template(
+            "index.html",
+            relays=relays.snapshot(),
+            modes=[m.value for m in Mode],
+        )
+
+    @app.route("/api/status")
+    def api_status():
+        return jsonify(status_payload())
 
     @app.route("/api/clear", methods=["POST"])
     def api_clear():
@@ -86,23 +103,22 @@ def create_app():
             r = relays.toggle(rid)
         return jsonify({"ok": True, "id": r.id, "state": r.state})
 
+    @app.route("/api/sound/mode", methods=["POST"])
+    def api_sound_mode():
+        data = request.get_json(force=True, silent=True) or {}
+        try:
+            m = sound.set_mode(data.get("mode", "auto"))
+        except ValueError as e:
+            return jsonify({"ok": False, "error": str(e)}), 400
+        return jsonify({"ok": True, "mode": m})
+
     # ---------------- broadcaster ----------------
 
     def broadcaster():
         interval = cfg["web"].get("poll_interval_s", 0.5)
         while True:
             try:
-                s = obd_mgr.get_snapshot()
-                sio.emit("status", {
-                    "connected": s.connected,
-                    "ts": s.ts,
-                    "rpm": s.rpm, "speed_kmh": s.speed_kmh,
-                    "coolant_c": s.coolant_c, "intake_c": s.intake_c,
-                    "maf_gs": s.maf_gs, "boost_bar": s.boost_bar,
-                    "throttle_pct": s.throttle_pct, "pedal_pct": s.pedal_pct,
-                    "dtcs": s.dtcs, "auto_clear": obd_mgr.auto_clear,
-                    "relays": relays.snapshot(),
-                })
+                sio.emit("status", status_payload())
             except Exception:
                 log.exception("broadcaster error")
             time.sleep(interval)
@@ -111,6 +127,7 @@ def create_app():
 
     def _shutdown(*_):
         log.info("Shutting down…")
+        sound.stop()
         obd_mgr.stop()
         relays.cleanup()
         sys.exit(0)

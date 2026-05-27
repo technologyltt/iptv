@@ -77,4 +77,20 @@ button:active { transform: scale(0.98); }
 .relay .rname { font-weight: 600; font-size: 14px; }
 .relay .rstate { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
 .relay.on .rstate { color: var(--green); }
-.hint p { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0; }
+.modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.mode {
+  text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px;
+  padding: 12px 6px; background: var(--card2);
+}
+.mode.active { background: #1e2e3a; color: #6db5ff; border: 1px solid #3498db66; }
+.sound-row { align-items: center; justify-content: space-between; }
+.sound-state { font-size: 13px; color: var(--muted); }
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  background: #3a1e1e; color: var(--red); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.badge.on { background: #1e3a25; color: var(--green); }
+.sound-reason { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+.hint p, .hint-inline { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 0; }
+.hint-inline { margin-top: 10px; }

@@ -1,40 +1,53 @@
-# EDC17CP14 VTG Sound Tuning Toolkit
-**Audi A6 C6 2.7 TDI (BPP/BSG/CAN) — 2009**
+# Audi A6 C6 2.7 TDI · Sound Control toolkit
+**EDC17CP14 — sin reflash de ECU**
 
-Sistema de apoyo para tuning de VTG (sonido grave a bajas RPM, sin DTC) basado en
-Raspberry Pi + ELM327 + relé, con interfaz web para móvil.
+Toolkit para conseguir un sonido grave a bajas RPM en el Audi 2.7 TDI **sin
+tocar el software de la ECU**, controlando una válvula de bypass de escape (o
+un soundbooster activo) desde una Raspberry Pi con telemetría OBD y UI móvil.
 
-> ⚠️ **Aviso legal y de seguridad**
-> Modificar el software de la ECU puede invalidar la garantía, afectar emisiones
-> y la legalidad en circulación (ITV/TÜV). Este repositorio es una guía técnica
-> y un toolkit para banco/pruebas privadas, no asesoría legal. Cualquier mapa
-> publicado de Bosch EDC17 es propiedad intelectual del fabricante: trabaja
-> siempre sobre tu propio fichero (read original → backup → modificar).
+> No se modifican mapas. No se intercepta el actuador VTG. Cero riesgo de
+> P2563/limp por la modificación. La válvula va aguas abajo del DPF, fuera de
+> cualquier lazo de control de la ECU.
+
+## Qué hace
+
+1. La Pi lee por OBD-II (ELM327): RPM, MAF, MAP/boost, ECT, pedal, velocidad, DTCs.
+2. Decide cuándo abrir la válvula de escape (relé 1) — modo AUTO con histeresis:
+   - **Abre** en 600–1400 rpm con pedal ≤ 20 % y boost ≤ 0.2 bar (idle, marcha lenta, frío).
+   - **Cierra** automáticamente en autopista o bajo carga.
+   - Modos manuales: AUTO / OPEN / CLOSED / COLD_ONLY.
+3. Sirve dashboard móvil (Flask + WebSocket) con telemetría, control y borrado de DTC.
+4. Borrado **selectivo** de DTCs con whitelist + pre-condiciones (no enmascarar fallos reales).
 
 ## Estructura
 
 ```
 docs/
-  01_concepto_vtg.md       # Lógica de la modificación, mapas, parámetros
-  02_hardware.md           # Lista de compra y cableado
-  03_seguridad_dtc.md      # Estrategia de borrado selectivo (no enmascarar fallos reales)
-  04_instalacion.md        # Pasos en la Raspberry
+  01_concepto_sonido_externo.md   # Por qué este enfoque y cómo funciona
+  02_hardware.md                   # Lista de compra y cableado
+  03_seguridad_dtc.md              # Estrategia de borrado seguro
+  04_instalacion.md                # Pasos en la Raspberry
 app/
-  obd_manager.py           # ELM327: lectura PIDs, DTCs, borrado selectivo
-  relay_controller.py      # Control GPIO de los relés
-  web_server.py            # Flask + SocketIO, UI móvil
-  config.yaml              # Whitelist de DTCs, GPIO, OBD port
-  templates/index.html     # UI móvil responsive
-systemd/
-  edc17-vtg.service        # Arranque automático en boot
-scripts/
-  install.sh               # Instalación en Raspberry Pi OS Lite
+  obd_manager.py                   # ELM327: PIDs, DTCs, borrado con guards
+  sound_controller.py              # Lógica AUTO/manual de apertura válvula
+  relay_controller.py              # GPIO de los relés
+  web_server.py                    # Flask + SocketIO
+  config.yaml                      # Toda la configuración
+  templates/index.html             # UI móvil
+  static/{app.css, app.js}
+systemd/edc17-vtg.service
+scripts/install.sh
 ```
 
-## Resumen del sistema
+## Empieza por aquí
 
-1. La Raspberry Pi se alimenta del coche (12 V → 5 V) por buck convertidor con fusible.
-2. ELM327 USB conectado a OBD-II → `python-obd` lee PIDs (RPM, MAP, MAF, IAT, ECT, demanda de par, DTCs).
-3. Relé HAT controla salidas auxiliares por GPIO (uso libre: válvula sound, LED, switch de modo).
-4. Servicio Flask + WebSocket sirve dashboard en `http://raspberrypi.local:5000` o por hotspot WiFi de la Pi.
-5. Borrado de DTC **selectivo** (whitelist) cada 10 s **solo si** la ECU está parada o en idle estable — nunca durante carga, nunca códigos críticos.
+1. Lee `docs/01_concepto_sonido_externo.md` (qué se puede y qué no).
+2. `docs/02_hardware.md` para la lista de compra (~75 € Pi + OBD + relés, +120–150 € la válvula instalada).
+3. `docs/04_instalacion.md` para flashear Pi OS y dejar el servicio corriendo.
+
+## Coste y tiempo
+
+- Componentes electrónicos: **~75 €**
+- Válvula de escape + soldadura en taller: **~120–170 €**
+- Tiempo Pi (config + cableado): 2–3 h
+- Tiempo taller (válvula): 1–2 h

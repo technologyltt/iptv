@@ -4,16 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0d10">
-  <title>EDC17 VTG · Audi A6 2.7 TDI</title>
+  <title>Audi 2.7 TDI · Sound Control</title>
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
   <header>
-    <h1>EDC17 · VTG Control</h1>
+    <h1>Sound Control · 2.7 TDI</h1>
     <span id="conn" class="pill off">desconectado</span>
   </header>
 
   <main>
+    <section class="card">
+      <h2>Modo sonido</h2>
+      <div class="modes">
+        {% for m in modes %}
+        <button class="mode" data-mode="{{ m }}">{{ m }}</button>
+        {% endfor %}
+      </div>
+      <div class="row sound-row">
+        <div class="sound-state">
+          Válvula: <span id="sound-open" class="badge">—</span>
+        </div>
+        <div class="sound-reason" id="sound-reason">—</div>
+      </div>
+    </section>
+
     <section class="card">
       <h2>Estado motor</h2>
       <div class="grid">
@@ -36,12 +51,12 @@
       </div>
       <label class="toggle">
         <input type="checkbox" id="auto-clear">
-        <span>Auto-borrar cada 10 s (solo whitelist, solo idle)</span>
+        <span>Auto-borrar cada 10 s (solo whitelist + idle estable)</span>
       </label>
     </section>
 
     <section class="card">
-      <h2>Relés</h2>
+      <h2>Relés (manual)</h2>
       <div id="relays" class="relays">
         {% for r in relays %}
         <button class="relay" data-id="{{ r.id }}">
@@ -50,12 +65,13 @@
         </button>
         {% endfor %}
       </div>
+      <p class="hint-inline">En modo AUTO el relé "Válvula sound" lo controla el sistema; pulsarlo manualmente lo fuerza solo hasta el siguiente tick.</p>
     </section>
 
     <section class="card hint">
-      <p>Modo sound: relé 1 abierto → válvula abierta (sonido grave a bajas RPM).
-      El borrado automático solo actúa con motor parado o idle estable, pedal &lt; 5 %,
-      velocidad 0 km/h, y nunca sobre códigos críticos.</p>
+      <p><b>Sin reflash de ECU.</b> La válvula está después del DPF, fuera del lazo de control de la ECU.
+      AUTO abre solo en 600–1400 rpm con pedal ≤ 20%, baja velocidad, o motor frío.
+      Cierra automáticamente en autopista y bajo carga.</p>
     </section>
   </main>
 

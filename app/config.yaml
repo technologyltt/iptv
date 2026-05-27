@@ -3,12 +3,12 @@ obd:
   baudrate: 38400
   timeout: 2.0
   fast: false
-  protocol: auto              # ISO 15765-4 (CAN) en este Audi
+  protocol: auto
 
 dtc:
   auto_clear_enabled: false   # arranca en OFF; el usuario lo activa desde la web
   auto_clear_interval_s: 10
-  clearable_codes:            # whitelist; nada fuera de aquí se borra
+  clearable_codes:            # whitelist; nada fuera de aquí se borra automáticamente
     - P2563
     - P0046
     - P132B
@@ -25,11 +25,25 @@ dtc:
     stable_window_s: 5
 
 relays:
-  # BCM numbering
+  # BCM numbering, active_low: módulo relé típico (LOW = activo)
   - {id: 1, gpio: 5,  name: "Válvula sound", active_low: true, default: false}
-  - {id: 2, gpio: 6,  name: "LED modo",      active_low: true, default: false}
-  - {id: 3, gpio: 13, name: "Auxiliar 3",    active_low: true, default: false}
-  - {id: 4, gpio: 19, name: "Auxiliar 4",    active_low: true, default: false}
+  - {id: 2, gpio: 6,  name: "Amp soundbooster", active_low: true, default: false}
+  - {id: 3, gpio: 13, name: "LED modo",      active_low: true, default: false}
+  - {id: 4, gpio: 19, name: "Auxiliar",      active_low: true, default: false}
+
+sound:
+  relay_id: 1                 # qué relé es la válvula de escape
+  mode: auto                  # auto | open | closed | cold_only
+  rpm_min: 600
+  rpm_max: 1400
+  pedal_max_pct: 20
+  boost_max_bar: 0.20
+  speed_max_kmh: 30
+  cold_below_c: 50
+  warm_above_c: 60
+  hold_open_ms: 300
+  hold_close_ms: 500
+  tick_ms: 200
 
 web:
   host: 0.0.0.0
