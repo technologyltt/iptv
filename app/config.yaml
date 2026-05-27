@@ -1,0 +1,41 @@
+obd:
+  port: /dev/ttyUSB0          # ELM327 USB. Para BT: /dev/rfcomm0
+  baudrate: 38400
+  timeout: 2.0
+  fast: false
+  protocol: auto              # ISO 15765-4 (CAN) en este Audi
+
+dtc:
+  auto_clear_enabled: false   # arranca en OFF; el usuario lo activa desde la web
+  auto_clear_interval_s: 10
+  clearable_codes:            # whitelist; nada fuera de aquí se borra
+    - P2563
+    - P0046
+    - P132B
+  blacklist_codes:            # nunca, ni manual
+    - P0234
+    - P0299
+    - P003A
+    - P0606
+    - P062F
+  precondition:
+    max_rpm: 1100
+    max_speed_kmh: 1
+    max_pedal_pct: 5
+    stable_window_s: 5
+
+relays:
+  # BCM numbering
+  - {id: 1, gpio: 5,  name: "Válvula sound", active_low: true, default: false}
+  - {id: 2, gpio: 6,  name: "LED modo",      active_low: true, default: false}
+  - {id: 3, gpio: 13, name: "Auxiliar 3",    active_low: true, default: false}
+  - {id: 4, gpio: 19, name: "Auxiliar 4",    active_low: true, default: false}
+
+web:
+  host: 0.0.0.0
+  port: 5000
+  poll_interval_s: 0.5
+
+logging:
+  dir: ./logs
+  level: INFO

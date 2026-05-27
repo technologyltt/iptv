@@ -1,0 +1,7 @@
+obd>=0.7.1
+pyserial>=3.5
+Flask>=3.0
+Flask-SocketIO>=5.3
+PyYAML>=6.0
+# On Raspberry Pi:
+RPi.GPIO>=0.7.1; platform_machine=="armv7l" or platform_machine=="aarch64"

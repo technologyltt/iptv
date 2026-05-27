@@ -1,0 +1,16 @@
+[Unit]
+Description=EDC17 VTG OBD + Relay web service
+After=network-online.target bluetooth.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__REPO__/app
+Environment="PATH=__REPO__/.venv/bin:/usr/bin:/bin"
+ExecStart=__REPO__/.venv/bin/python web_server.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
