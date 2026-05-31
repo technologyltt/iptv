@@ -74,10 +74,19 @@ bastidor/
   dgt_microdatos.py   # Sniffer + ingesta + historial de titulares (Open Data DGT)
   providers.py        # Proveedor de pago (carVertical/autoDNA), configurable
   payments.py         # Stripe Checkout (sin dependencias, vía HTTPS)
-  calc.py             # Calculadora de potencia fiscal (fórmula oficial)
-  templates/          # index, resultado, informe, herramientas, potencia_fiscal
+  calc.py             # Calculadoras: potencia fiscal, valor Hacienda, transferencia
+  matricula.py        # Calculadora de fecha de matriculación (matrícula->fecha)
+  templates/          # index, resultado, informe, herramientas + calculadoras
   static/style.css
 ```
+
+## Herramientas incluidas
+
+- **Detective de bastidor** — VIN → marca/modelo/año/motor + historial titulares
+- **Potencia fiscal (CVF)** — fórmula oficial española
+- **Valor para Hacienda** — tabla oficial de depreciación sobre el precio medio
+- **Coste de transferencia** — ITP por CCAA + tasa DGT + gestoría
+- **Fecha de matriculación** — estima la fecha desde la matrícula (interpolación)
 
 ## Legal / RGPD
 

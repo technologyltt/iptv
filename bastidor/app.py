@@ -134,6 +134,40 @@ def fecha_matriculacion():
                            resultado=resultado, error=error)
 
 
+@app.route("/valor-hacienda", methods=["GET", "POST"])
+def valor_hacienda():
+    resultado = pct = error = None
+    if request.method == "POST":
+        try:
+            precio = float(request.form.get("precio", 0).replace(",", "."))
+            anios = float(request.form.get("anios", 0).replace(",", "."))
+            pct = calc.porcentaje_depreciacion(anios)
+            resultado = calc.valor_fiscal(precio, anios)
+        except (ValueError, TypeError) as e:
+            error = f"Datos no válidos: {e}"
+    return render_template("valor_hacienda.html",
+                           resultado=resultado, pct=pct, error=error)
+
+
+@app.route("/coste-transferencia", methods=["GET", "POST"])
+def coste_transferencia():
+    resultado = error = None
+    ccaa = request.form.get("ccaa", "Madrid")
+    if request.method == "POST":
+        try:
+            valor = float(request.form.get("valor", 0).replace(",", "."))
+            override = request.form.get("tipo_itp", "").strip().replace(",", ".")
+            tipo = float(override) if override else calc.ITP_CCAA.get(ccaa, 4.0)
+            gestoria = float(request.form.get("gestoria", 0) or 0)
+            resultado = calc.coste_transferencia(
+                valor, tipo, request.form.get("tipo_veh") == "moto", gestoria)
+            resultado["tipo_aplicado"] = tipo
+        except (ValueError, TypeError) as e:
+            error = f"Datos no válidos: {e}"
+    return render_template("coste_transferencia.html", resultado=resultado,
+                           error=error, ccaas=calc.ITP_CCAA, ccaa_sel=ccaa)
+
+
 @app.route("/potencia-fiscal", methods=["GET", "POST"])
 def potencia_fiscal():
     resultado = error = None
