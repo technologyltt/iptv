@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detective de Bastidor</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header><div class="logo">Detective <span>de Bastidor</span></div></header>
+<main>
+  <h1>Detective de bastidor 🕵️</h1>
+  <p class="sub">Introduce el número de bastidor (VIN, 17 caracteres) y te saco
+     marca, modelo, año, motor e historial de titulares.</p>
+
+  <form class="box" method="post" action="/buscar">
+    <div class="det">🕵️</div>
+    <label for="bastidor">Introduce el Número de Bastidor</label>
+    <input type="text" id="bastidor" name="bastidor" maxlength="17"
+           placeholder="WBABT31023JP07303"
+           value="{{ valor or '' }}" autocomplete="off" required>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <button type="submit">BUSCAR BASTIDOR</button>
+  </form>
+
+  <p class="muted">Datos técnicos vía estándar VIN + API pública NHTSA.
+     Historial de titulares vía Microdatos abiertos de la DGT (cuando estén
+     cargados). Sin datos personales: la DGT publica esta info anonimizada.</p>
+</main>
+</body>
+</html>
