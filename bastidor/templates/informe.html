@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Informe completo {{ vin }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header><div class="logo">Detective <span>de Bastidor</span></div></header>
+<main>
+  <h1>Informe completo</h1>
+  <p class="sub" style="letter-spacing:2px;font-family:monospace">{{ vin }}</p>
+
+  {% if pago %}
+    {% if pago.error %}
+      <div class="err">{{ pago.error }}</div>
+    {% else %}
+    <div class="card">
+      <h2>Kilómetros y daños</h2>
+      <table>
+        <tr><th>Kilómetros</th><td>{{ pago.kilometros or '—' }}</td></tr>
+        <tr><th>Pérdida total</th><td>{{ pago.perdida_total if pago.perdida_total is not none else '—' }}</td></tr>
+        <tr><th>Robado</th><td>{{ pago.robado if pago.robado is not none else '—' }}</td></tr>
+        <tr><th>Daños registrados</th><td>{{ pago.danios|length }} registro(s)</td></tr>
+        <tr><th>Lecturas de KM</th><td>{{ pago.registros_km|length }} registro(s)</td></tr>
+      </table>
+    </div>
+    {% endif %}
+  {% else %}
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <div class="card">
+      <h2>Qué incluye el informe completo</h2>
+      <ul>
+        <li>Historial de <strong>kilómetros</strong> (lecturas de ITV/proveedor)</li>
+        <li><strong>Golpes y siniestros</strong> registrados</li>
+        <li>Pérdida total, robo, fotos del anuncio</li>
+      </ul>
+      <p class="muted">Estos datos NO son Open Data: se obtienen de un proveedor
+         de pago (carVertical/autoDNA). Tú contratas el proveedor y cobras al
+         usuario; el margen es el negocio.</p>
+
+      {% if pago_activo and proveedor_activo %}
+        <form method="post" action="{{ url_for('pago_crear', vin=vin) }}">
+          <button type="submit">Pagar {{ '%.2f'|format(precio) }} € y ver informe</button>
+        </form>
+      {% else %}
+        <div class="note">
+          ⚙️ Producto no disponible todavía. Para activarlo configura:
+          <br>· <code>STRIPE_SECRET_KEY</code> (pasarela de pago)
+          <br>· <code>CARVERTICAL_API_URL</code> + <code>CARVERTICAL_API_KEY</code> (proveedor de datos)
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <a class="back" href="/">← Volver al buscador</a>
+</main>
+</body>
+</html>

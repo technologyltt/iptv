@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Informe del bastidor {{ d.vin }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header><div class="logo">Detective <span>de Bastidor</span></div></header>
+<main>
+  <h1>Informe del bastidor</h1>
+  <p class="sub" style="letter-spacing:2px;font-family:monospace">{{ d.vin }}</p>
+
+  <div class="card">
+    <h2>Identificación</h2>
+    <table>
+      <tr><th>Marca / fabricante</th><td>{{ d.marca or '—' }}</td></tr>
+      <tr><th>País de fabricación</th><td>{{ d.pais_fabricacion }}</td></tr>
+      <tr><th>Año de modelo</th><td>{{ d.anio_modelo or '—' }}</td></tr>
+      <tr><th>WMI (fabricante)</th><td><code>{{ d.wmi }}</code></td></tr>
+      <tr><th>Nº de serie</th><td><code>{{ d.numero_serie }}</code></td></tr>
+      <tr><th>Dígito de control</th><td>
+        {% if d.digito_control is none %}<span class="pill q">no comprobable</span>
+        {% elif d.digito_control %}<span class="pill ok">válido ✓</span>
+        {% else %}<span class="pill no">no cuadra ✗</span>{% endif %}
+        <span class="muted"> (solo obligatorio en coches de EE.UU./Canadá)</span>
+      </td></tr>
+    </table>
+  </div>
+
+  {% if d.detalle %}
+  <div class="card">
+    <h2>Ficha técnica (NHTSA)</h2>
+    <table>
+      {% for k, v in d.detalle.items() %}
+      <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% else %}
+  <div class="card">
+    <h2>Ficha técnica</h2>
+    <p class="muted">Sin enriquecimiento online (la API de la NHTSA no respondió
+       o no tiene este VIN). La identificación de arriba sale de la tabla WMI local.</p>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Historial de titulares (DGT)</h2>
+    {% if hist %}
+      <p><strong>{{ hist.num_propietarios }}</strong> titular(es) registrados.</p>
+      <ul class="timeline">
+        {% for t in hist.tramos %}
+        <li>
+          <div class="who">
+            {{ loop.index }}.º titular —
+            {{ t.tipo_persona }} · prov. {{ t.provincia or '—' }}
+          </div>
+          <div class="muted">
+            Desde {{ t.desde or '?' }}
+            {% if t.hasta %}hasta {{ t.hasta }}{% else %}(actual){% endif %}
+            {% if t.meses is not none %} · {{ t.meses }} meses{% endif %}
+            · evento: {{ t.evento }}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No hay historial para este bastidor.</p>
+      <div class="note">
+        Para activar el historial de propietarios descarga los ficheros de
+        <strong>Microdatos de Transferencias y Matriculaciones</strong> de la DGT
+        e ingiérelos:<br><br>
+        <code>python dgt_microdatos.py ingest export_*.txt</code><br><br>
+        Recuerda: desde feb-2025 los ficheros abiertos ya no traen el bastidor
+        completo; funciona con datos históricos (hasta ene-2025).
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="border-color:#2f6b46">
+    <h2 style="color:var(--ok)">Informe completo — km, golpes y siniestros</h2>
+    <p class="muted">El historial de KM y daños NO está en el Open Data de la
+       DGT; sale de un proveedor de pago (carVertical/autoDNA). Igual que en
+       seisenlinea & co.</p>
+    <a class="back" style="display:inline-block;background:var(--ok);color:#04121b;
+       padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:800"
+       href="{{ url_for('informe_completo', vin=d.vin) }}">
+       Ver informe completo{% if pago_activo %} · {{ '%.2f'|format(precio) }} €{% endif %} →
+    </a>
+  </div>
+
+  <a class="back" href="/">← Buscar otro bastidor</a>
+</main>
+</body>
+</html>

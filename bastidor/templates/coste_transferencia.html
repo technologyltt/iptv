@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coste de transferencia</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header><div class="logo">Detective <span>de Bastidor</span></div></header>
+<main>
+  <h1>Coste de transferencia 🔁</h1>
+  <p class="sub">ITP (según tu CCAA) + tasa de la DGT + gestoría.</p>
+
+  <form class="box" method="post" action="{{ url_for('coste_transferencia') }}" style="text-align:left">
+    <label for="valor">Valor fiscal del coche (€)</label>
+    <input type="text" id="valor" name="valor" placeholder="8580" required>
+    <p class="muted" style="margin:6px 0">Es el valor que calcula
+       "Valor para Hacienda".</p>
+
+    <label for="ccaa">Comunidad Autónoma</label>
+    <select id="ccaa" name="ccaa" style="width:100%;padding:14px;border-radius:10px;background:#0c0e12;color:var(--ink);border:2px solid #2a3543">
+      {% for nombre, tipo in ccaas.items() %}
+      <option value="{{ nombre }}" {{ 'selected' if nombre==ccaa_sel else '' }}>{{ nombre }} ({{ tipo }} %)</option>
+      {% endfor %}
+    </select>
+
+    <label for="tipo_itp">Tipo ITP manual (%) — opcional, sobreescribe la CCAA</label>
+    <input type="text" id="tipo_itp" name="tipo_itp" placeholder="4">
+
+    <label for="tipo_veh">Tipo de vehículo</label>
+    <select id="tipo_veh" name="tipo_veh" style="width:100%;padding:14px;border-radius:10px;background:#0c0e12;color:var(--ink);border:2px solid #2a3543">
+      <option value="coche">Turismo (tasa DGT 55,70 €)</option>
+      <option value="moto">Moto/ciclomotor (tasa DGT 27,85 €)</option>
+    </select>
+
+    <label for="gestoria">Gestoría (€) — opcional</label>
+    <input type="text" id="gestoria" name="gestoria" placeholder="0">
+
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <button type="submit">Calcular coste</button>
+  </form>
+
+  {% if resultado %}
+  <div class="card"><h2>Desglose</h2>
+    <table>
+      <tr><th>ITP ({{ resultado.tipo_aplicado }} %)</th><td>{{ '%.2f'|format(resultado.itp) }} €</td></tr>
+      <tr><th>Tasa DGT</th><td>{{ '%.2f'|format(resultado.tasa_dgt) }} €</td></tr>
+      <tr><th>Gestoría</th><td>{{ '%.2f'|format(resultado.gestoria) }} €</td></tr>
+      <tr><th>Total</th><td><strong>{{ '%.2f'|format(resultado.total) }} €</strong></td></tr>
+    </table>
+    <p class="muted">Los tipos de ITP cambian cada año y algunas CCAA usan
+       cuotas fijas para coches viejos. Verifica el tipo vigente.</p>
+  </div>
+  {% endif %}
+
+  <a class="back" href="{{ url_for('herramientas') }}">← Herramientas</a>
+</main>
+</body>
+</html>

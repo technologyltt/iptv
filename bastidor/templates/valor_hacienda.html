@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valor del vehículo para Hacienda</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header><div class="logo">Detective <span>de Bastidor</span></div></header>
+<main>
+  <h1>Valor para Hacienda 💶</h1>
+  <p class="sub">Aplica la tabla oficial de depreciación de la Orden de precios
+     medios sobre el precio del modelo a estrenar.</p>
+
+  <form class="box" method="post" action="{{ url_for('valor_hacienda') }}" style="text-align:left">
+    <label for="precio">Precio medio a estrenar (€)</label>
+    <input type="text" id="precio" name="precio" placeholder="22000" required>
+    <p class="muted" style="margin:6px 0">Lo encuentras en el anexo de la Orden
+       anual de precios medios (BOE) para tu marca/modelo.</p>
+    <label for="anios">Años de uso</label>
+    <input type="text" id="anios" name="anios" placeholder="6" required>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <button type="submit">Calcular valor fiscal</button>
+  </form>
+
+  {% if resultado is not none %}
+  <div class="card"><h2>Valor fiscal</h2>
+    <p style="font-size:1.6rem;margin:0"><strong>{{ '%.2f'|format(resultado) }} €</strong></p>
+    <p class="muted">Depreciación aplicada: {{ pct }} % del valor original.
+       Este valor es la base para el ITP de la transferencia.</p>
+  </div>
+  {% endif %}
+
+  <a class="back" href="{{ url_for('herramientas') }}">← Herramientas</a>
+</main>
+</body>
+</html>

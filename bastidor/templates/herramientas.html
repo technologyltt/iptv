@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Herramientas</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header><div class="logo">Detective <span>de Bastidor</span></div></header>
+<main>
+  <h1>Herramientas</h1>
+  <div class="card"><h2><a href="{{ url_for('index') }}" style="color:var(--acc);text-decoration:none">🕵️ Detective de bastidor</a></h2>
+    <p class="muted">Marca, modelo, año, motor e historial de titulares por VIN.</p></div>
+  <div class="card"><h2><a href="{{ url_for('potencia_fiscal') }}" style="color:var(--acc);text-decoration:none">🐎 Calculadora de potencia fiscal</a></h2>
+    <p class="muted">CVF según la fórmula oficial española (IVTM).</p></div>
+  <div class="card"><h2><a href="{{ url_for('fecha_matriculacion') }}" style="color:var(--acc);text-decoration:none">📅 Calculadora de fecha de matriculación</a></h2>
+    <p class="muted">Estima la fecha a partir de la matrícula.</p></div>
+  <div class="card"><h2><a href="{{ url_for('valor_hacienda') }}" style="color:var(--acc);text-decoration:none">💶 Valor para Hacienda</a></h2>
+    <p class="muted">Valor fiscal con la tabla oficial de depreciación.</p></div>
+  <div class="card"><h2><a href="{{ url_for('coste_transferencia') }}" style="color:var(--acc);text-decoration:none">🔁 Coste de transferencia</a></h2>
+    <p class="muted">ITP por CCAA + tasa DGT + gestoría.</p></div>
+  <a class="back" href="/">← Inicio</a>
+</main>
+</body>
+</html>
