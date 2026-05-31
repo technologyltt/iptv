@@ -79,6 +79,18 @@
     {% endif %}
   </div>
 
+  <div class="card" style="border-color:#2f6b46">
+    <h2 style="color:var(--ok)">Informe completo — km, golpes y siniestros</h2>
+    <p class="muted">El historial de KM y daños NO está en el Open Data de la
+       DGT; sale de un proveedor de pago (carVertical/autoDNA). Igual que en
+       seisenlinea & co.</p>
+    <a class="back" style="display:inline-block;background:var(--ok);color:#04121b;
+       padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:800"
+       href="{{ url_for('informe_completo', vin=d.vin) }}">
+       Ver informe completo{% if pago_activo %} · {{ '%.2f'|format(precio) }} €{% endif %} →
+    </a>
+  </div>
+
   <a class="back" href="/">← Buscar otro bastidor</a>
 </main>
 </body>

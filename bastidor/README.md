@@ -36,25 +36,46 @@ python app.py          # http://localhost:5000
 1. Descarga los ficheros mensuales de Microdatos de la DGT:
    - Transferencias: <https://www.dgt.es/menusecundario/dgt-en-cifras/dgt-en-cifras-resultados/dgt-en-cifras-detalle/Microdatos-de-Transferencias-de-Vehiculos-mensual/>
    - Matriculaciones: <https://www.dgt.es/menusecundario/dgt-en-cifras/dgt-en-cifras-resultados/dgt-en-cifras-detalle/Microdatos-de-Matriculaciones-de-Vehiculos-mensual/>
-2. **Ajusta el LAYOUT de ancho fijo** en `dgt_microdatos.py` con el diseño de
-   registro oficial en PDF (`MATRICULACIONES_MATRABA.pdf` /
-   `TRANSFERENCIAS_MATRABA.pdf`). Las posiciones de la plantilla son
-   orientativas. Atajo: el repo `jcaubin/DgtDataFileHelpers` ya tiene layouts.
-3. Ingiere:
+2. Ingiere. **No necesitas el PDF de diseño**: el módulo detecta solo las
+   columnas de bastidor y fecha (sniffer). Para provincia/tipo de titular puedes
+   dar offsets con un JSON (`DGT_LAYOUT=lay.json`).
    ```bash
-   python dgt_microdatos.py ingest /ruta/export_*.txt
-   python dgt_microdatos.py buscar WBABT31023JP07303
+   python dgt_microdatos.py sniff  /ruta/export_2023.txt    # ver columnas detectadas
+   python dgt_microdatos.py ingest /ruta/export_*.txt        # cargar a SQLite
+   python dgt_microdatos.py buscar WBABT31023JP07303          # consultar
+   python dgt_microdatos.py stats                             # qué hay cargado
    ```
+   (El nombre del fichero decide el tipo: *transf* → transferencia, *baja* → baja,
+   resto → matriculación.)
+
+## Informe completo de pago (opcional — el negocio)
+
+KM, golpes y siniestros NO son Open Data. Para ofrecerlos integras un proveedor
+de pago y cobras al usuario con margen. Variables de entorno:
+
+```bash
+export STRIPE_SECRET_KEY=sk_live_...      # pasarela de pago
+export INFORME_PRECIO_CENT=1499           # 14,99 € (lo que cobras tú)
+export CARVERTICAL_API_URL=https://...    # endpoint del proveedor que contrates
+export CARVERTICAL_API_KEY=...            # tu clave
+```
+
+Sin estas variables, la web muestra el producto como "no disponible" en vez de
+romper. En producción, confirma el pago por **webhook de Stripe** antes de
+entregar el informe.
 
 ## Estructura
 
 ```
 bastidor/
-  app.py              # Web Flask (junta las dos fuentes)
+  app.py              # Web Flask (junta todo)
   vin.py              # Decode VIN: validación, dígito control, año, NHTSA
   wmi.py              # Tabla WMI local (fabricante + país, offline)
-  dgt_microdatos.py   # Ingesta + historial de titulares (Open Data DGT)
-  templates/          # index.html, resultado.html
+  dgt_microdatos.py   # Sniffer + ingesta + historial de titulares (Open Data DGT)
+  providers.py        # Proveedor de pago (carVertical/autoDNA), configurable
+  payments.py         # Stripe Checkout (sin dependencias, vía HTTPS)
+  calc.py             # Calculadora de potencia fiscal (fórmula oficial)
+  templates/          # index, resultado, informe, herramientas, potencia_fiscal
   static/style.css
 ```
 

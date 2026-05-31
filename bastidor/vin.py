@@ -47,6 +47,12 @@ def normalize(vin: str) -> str:
     return (vin or "").strip().upper().replace(" ", "").replace("-", "")
 
 
+def is_vin(s: str) -> bool:
+    """True si `s` tiene pinta de VIN válido (17 chars, sin I/O/Q)."""
+    s = (s or "").strip().upper()
+    return len(s) == 17 and all(c in _VALID for c in s)
+
+
 def validate(vin: str) -> tuple[bool, str | None]:
     """Devuelve (es_valido, mensaje_error)."""
     if len(vin) != 17:

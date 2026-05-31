@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de potencia fiscal</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header><div class="logo">Detective <span>de Bastidor</span></div></header>
+<main>
+  <h1>Potencia fiscal (CVF) 🐎</h1>
+  <p class="sub">Fórmula oficial española: CVF = T · (0,785 · D² · R · N)^0,6</p>
+
+  <form class="box" method="post" action="{{ url_for('potencia_fiscal') }}" style="text-align:left">
+    <label for="diametro">Diámetro del cilindro D (cm)</label>
+    <input type="text" id="diametro" name="diametro" placeholder="8.1" required>
+    <label for="carrera">Carrera del pistón R (cm)</label>
+    <input type="text" id="carrera" name="carrera" placeholder="8.6" required>
+    <label for="cilindros">Número de cilindros N</label>
+    <input type="text" id="cilindros" name="cilindros" placeholder="4" required>
+    <label for="tiempos">Tipo de motor</label>
+    <select id="tiempos" name="tiempos" style="width:100%;padding:14px;border-radius:10px;background:#0c0e12;color:var(--ink);border:2px solid #2a3543">
+      <option value="4">4 tiempos (T = 0,08)</option>
+      <option value="2">2 tiempos (T = 0,11)</option>
+    </select>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <button type="submit">Calcular</button>
+  </form>
+
+  {% if resultado is not none %}
+  <div class="card"><h2>Resultado</h2>
+    <p style="font-size:1.6rem;margin:0"><strong>{{ resultado }}</strong> CVF</p>
+  </div>
+  {% endif %}
+
+  <a class="back" href="{{ url_for('herramientas') }}">← Herramientas</a>
+</main>
+</body>
+</html>
