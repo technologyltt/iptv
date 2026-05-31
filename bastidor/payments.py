@@ -15,12 +15,17 @@ simplicidad, se verifica el estado de la sesión al volver.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 import os
+import sqlite3
+import time
 import urllib.parse
 import urllib.request
-import json
 
 _API = "https://api.stripe.com/v1"
+_PAID_DB = os.environ.get("PAID_DB", os.path.join(os.path.dirname(__file__), "paid.db"))
 
 
 def enabled() -> bool:
@@ -64,7 +69,7 @@ def crear_checkout(vin: str, success_url: str, cancel_url: str) -> dict:
 
 
 def pago_confirmado(session_id: str) -> bool:
-    """Comprueba que una sesión de Checkout está pagada."""
+    """Comprueba que una sesión de Checkout está pagada (consulta directa)."""
     if not enabled() or not session_id:
         return False
     key = os.environ["STRIPE_SECRET_KEY"]
@@ -78,3 +83,56 @@ def pago_confirmado(session_id: str) -> bool:
     except Exception:
         return False
     return s.get("payment_status") == "paid"
+
+
+# --- Almacén de pagos confirmados (vía webhook) -----------------------------
+def _paid_con() -> sqlite3.Connection:
+    con = sqlite3.connect(_PAID_DB)
+    con.execute("CREATE TABLE IF NOT EXISTS pagado "
+                "(vin TEXT PRIMARY KEY, ts INTEGER)")
+    return con
+
+
+def mark_paid(vin: str) -> None:
+    con = _paid_con()
+    con.execute("INSERT OR REPLACE INTO pagado VALUES (?,?)",
+                (vin.strip().upper(), int(time.time())))
+    con.commit()
+    con.close()
+
+
+def is_paid(vin: str) -> bool:
+    if not os.path.exists(_PAID_DB):
+        return False
+    con = _paid_con()
+    row = con.execute("SELECT 1 FROM pagado WHERE vin=?",
+                      (vin.strip().upper(),)).fetchone()
+    con.close()
+    return row is not None
+
+
+# --- Verificación de webhook de Stripe (sin dependencias) -------------------
+def verify_webhook(payload: bytes, sig_header: str,
+                   tolerance: int = 300) -> dict | None:
+    """Valida la firma del webhook y devuelve el evento, o None si no es válida.
+
+    Cabecera Stripe-Signature: 't=<ts>,v1=<firma>'. Se firma '<ts>.<payload>'
+    con HMAC-SHA256 usando STRIPE_WEBHOOK_SECRET (whsec_...).
+    """
+    secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
+    if not secret or not sig_header:
+        return None
+    parts = dict(p.split("=", 1) for p in sig_header.split(",") if "=" in p)
+    ts, v1 = parts.get("t"), parts.get("v1")
+    if not ts or not v1:
+        return None
+    if abs(time.time() - int(ts)) > tolerance:
+        return None  # protege contra replays
+    signed = f"{ts}.".encode() + payload
+    expected = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, v1):
+        return None
+    try:
+        return json.loads(payload.decode("utf-8"))
+    except json.JSONDecodeError:
+        return None

@@ -11,13 +11,14 @@ Arrancar:  python app.py   ->  http://localhost:5000
 """
 from __future__ import annotations
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, abort, redirect, render_template, request, url_for
 
 from vin import decode, normalize, validate, VinError
 from dgt_microdatos import historial
 from providers import get_provider
 import payments
 import calc
+import matricula
 
 app = Flask(__name__)
 
@@ -54,9 +55,11 @@ def informe_completo(vin):
     if not ok:
         return redirect(url_for("index"))
 
-    # Si vuelve de Stripe con sesión pagada -> entregamos el informe
+    # Entregamos el informe si el pago está confirmado, ya sea por webhook
+    # (almacén) o por verificación directa de la sesión al volver de Stripe.
     session_id = request.args.get("session_id")
-    if session_id and payments.pago_confirmado(session_id):
+    if payments.is_paid(vin) or (session_id and payments.pago_confirmado(session_id)):
+        payments.mark_paid(vin)
         datos = get_provider().fetch(vin)
         return render_template("informe.html", vin=vin, pago=datos)
 
@@ -92,10 +95,43 @@ def pago_crear(vin):
     return redirect(sesion["url"])
 
 
+@app.route("/pago/webhook", methods=["POST"])
+def pago_webhook():
+    """Webhook de Stripe: marca el VIN como pagado de forma segura."""
+    evento = payments.verify_webhook(request.get_data(),
+                                     request.headers.get("Stripe-Signature", ""))
+    if evento is None:
+        abort(400)
+    if evento.get("type") == "checkout.session.completed":
+        vin = (evento.get("data", {}).get("object", {})
+               .get("client_reference_id"))
+        if vin:
+            payments.mark_paid(vin)
+    return "", 200
+
+
 # --- Herramientas ------------------------------------------------------------
 @app.route("/herramientas", methods=["GET"])
 def herramientas():
     return render_template("herramientas.html")
+
+
+@app.route("/fecha-matriculacion", methods=["GET", "POST"])
+def fecha_matriculacion():
+    resultado = error = None
+    if request.method == "POST":
+        anclas = {}
+        ref_p = request.form.get("ref_matricula", "").strip()
+        ref_f = request.form.get("ref_fecha", "").strip()
+        if ref_p and ref_f:
+            anclas[ref_p] = ref_f
+        try:
+            resultado = matricula.estimar_fecha(
+                request.form.get("matricula", ""), anclas).isoformat()
+        except matricula.MatriculaError as e:
+            error = str(e)
+    return render_template("fecha_matriculacion.html",
+                           resultado=resultado, error=error)
 
 
 @app.route("/potencia-fiscal", methods=["GET", "POST"])

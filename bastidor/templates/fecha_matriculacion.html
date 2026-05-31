@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de fecha de matriculación</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header><div class="logo">Detective <span>de Bastidor</span></div></header>
+<main>
+  <h1>Fecha de matriculación 📅</h1>
+  <p class="sub">Estima cuándo se matriculó un coche a partir de su matrícula
+     (formato actual: 4 dígitos + 3 consonantes).</p>
+
+  <form class="box" method="post" action="{{ url_for('fecha_matriculacion') }}" style="text-align:left">
+    <label for="matricula">Matrícula a estimar</label>
+    <input type="text" id="matricula" name="matricula" placeholder="1234 BCD" required>
+
+    <p class="muted" style="margin:16px 0 4px">
+      Para afinar, dame una matrícula reciente que conozcas con su fecha
+      (opcional pero recomendado):</p>
+    <label for="ref_matricula">Matrícula de referencia</label>
+    <input type="text" id="ref_matricula" name="ref_matricula" placeholder="4567 MGH">
+    <label for="ref_fecha">Fecha de esa matrícula</label>
+    <input type="text" id="ref_fecha" name="ref_fecha" placeholder="2024-03-01">
+
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <button type="submit">Estimar fecha</button>
+  </form>
+
+  {% if resultado %}
+  <div class="card"><h2>Estimación</h2>
+    <p style="font-size:1.5rem;margin:0">≈ <strong>{{ resultado }}</strong></p>
+    <p class="muted">Es una estimación por interpolación. Con más anclas
+       (matrícula↔fecha reales) la precisión mejora.</p>
+  </div>
+  {% endif %}
+
+  <div class="note">Ancla base fija: <code>0000 BBB = 18/09/2000</code> (primera
+     matrícula del sistema). Más anclas exactas: la DGT publica la "última
+     matrícula asignada" cada mes.</div>
+
+  <a class="back" href="{{ url_for('herramientas') }}">← Herramientas</a>
+</main>
+</body>
+</html>
